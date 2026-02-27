@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Garbage Sorting Robot Control</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#eee; }
+    h2 { color:#00e676; }
+    .row { margin-bottom: 12px; }
+    button { padding:10px 18px; margin:5px; font-size:16px; }
+    input[type=range] { width:300px; }
+    .panel { border:1px solid #333; padding:15px; margin-bottom:20px; border-radius:8px; }
+    .status { font-size:18px; font-weight:bold; }
+  </style>
+
+  <script>
+    function sendCmd(url, data) {
+      fetch(url, {
+        method: "POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body: data
+      });
+    }
+
+    function move(cmd) {
+      sendCmd("/move", "cmd=" + cmd);
+    }
+
+    function setSpeed(val) {
+      document.getElementById("speedVal").innerText = val;
+      sendCmd("/speed", "speed=" + val);
+    }
+
+    function lift(cmd) {
+      sendCmd("/lift", "cmd=" + cmd);
+    }
+
+    function setServo(ch, val) {
+      document.getElementById("s"+ch).innerText = val;
+      sendCmd("/servo", "channel=" + ch + "&angle=" + val);
+    }
+
+    function refreshSensors() {
+      fetch("/sensor_status")
+        .then(r => r.json())
+        .then(d => {
+          document.getElementById("metalStatus").innerText =
+            d.metal ? "METAL DETECTED" : "NO METAL";
+
+          document.getElementById("wetStatus").innerText =
+            d.wet ? "WET DETECTED" : "DRY";
+        });
+
+      fetch("/bin_levels")
+        .then(r => r.json())
+        .then(d => {
+          document.getElementById("dryBin").innerText   = d.dry   + "%";
+          document.getElementById("wetBin").innerText   = d.wet   + "%";
+          document.getElementById("metalBin").innerText = d.metal + "%";
+        });
+    }
+
+    setInterval(refreshSensors, 1500);
+  </script>
+</head>
+
+<body>
+
+<h1>🤖 Garbage Sorting Robot Control</h1>
+
+<div class="panel">
+  <h2>📷 Live Camera</h2>
+  <img src="/video_feed" width="640">
+</div>
+
+<div class="panel">
+  <h2>🚗 Drive Control</h2>
+  <div class="row">
+    <button onclick="move('forward')">⬆ Forward</button><br>
+    <button onclick="move('left')">⬅ Left</button>
+    <button onclick="move('stop')">⏹ Stop</button>
+    <button onclick="move('right')">➡ Right</button><br>
+    <button onclick="move('backward')">⬇ Backward</button>
+  </div>
+
+  <div class="row">
+    Speed:
+    <input type="range" min="30" max="100" value="70"
+           oninput="setSpeed(this.value)">
+    <span id="speedVal">70</span> %
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🛗 Lift Control</h2>
+  <button onclick="lift('up')">Lift Up</button>
+  <button onclick="lift('down')">Lift Down</button>
+  <button onclick="lift('stop')">Stop</button>
+</div>
+
+<div class="panel">
+  <h2>📦 Bin Levels</h2>
+  Dry:   <span id="dryBin">0%</span><br>
+  Wet:   <span id="wetBin">0%</span><br>
+  Metal: <span id="metalBin">0%</span>
+</div>
+
+<div class="panel">
+  <h2>🧪 Sensor Status</h2>
+  <div class="status">Metal: <span id="metalStatus">---</span></div>
+  <div class="status">Wet:   <span id="wetStatus">---</span></div>
+</div>
+
+<div class="panel">
+  <h2>🦾 Servo Controls (PCA9685)</h2>
+
+  <div class="row">
+    S0 – Garbage Detector (0–140):<br>
+    <input type="range" min="0" max="140" value="140"
+           oninput="setServo(0,this.value)">
+    <span id="s0">140</span>
+  </div>
+
+  <div class="row">
+    S1 – Pick Bucket (30–150):<br>
+    <input type="range" min="30" max="150" value="30"
+           oninput="setServo(1,this.value)">
+    <span id="s1">30</span>
+  </div>
+
+  <div class="row">
+    S2 – Dry Dustbin (0–90):<br>
+    <input type="range" min="0" max="90" value="0"
+           oninput="setServo(2,this.value)">
+    <span id="s2">0</span>
+  </div>
+
+  <div class="row">
+    S3 – Sorting Gate (0 / 70 / 140):<br>
+    <input type="range" min="0" max="140" step="70" value="70"
+           oninput="setServo(3,this.value)">
+    <span id="s3">70</span>
+  </div>
+
+  <div class="row">
+    S4 – Metal Dustbin (0–90):<br>
+    <input type="range" min="0" max="90" value="90"
+           oninput="setServo(4,this.value)">
+    <span id="s4">90</span>
+  </div>
+
+  <div class="row">
+    S5 – Dry Dustbin (0–90):<br>
+    <input type="range" min="0" max="90" value="0"
+           oninput="setServo(5,this.value)">
+    <span id="s5">0</span>
+  </div>
+
+</div>
+
+</body>
+</html>
